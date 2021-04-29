@@ -26,6 +26,7 @@ local path = ... .. "."
 local lib = require(path .. "lib.lib")
 
 local graphics = love.graphics
+local keyboard = love.keyboard
 local cw = graphics.getWidth()
 local ch = graphics.getHeight()
 local directory
@@ -51,33 +52,77 @@ end
 function elite.load(self, value)
   assert(directory, "Could not find image directory")
   assert(self.mode, "Could not find mode")
+  assert(lib.mode(self.mode), "Could not load mode due to its wrong value: \"" .. self.mode .. "\"")
   assert(lib.format(self.filename:sub(-3, #self.filename)), "Missing image format from filename: \"" .. self.filename .. "\"")
 
   if (value) then
     assert(type(value) == "number", "Wrong type of value parameter: number expected")
-    if (self.mode == "norm") then
-      assert(value == 1, "Wrong value parameter: range=1")
-    elseif (self.mode == "quad") then
-      assert(value > 0 and value < 6, "Wrong value parameter: range=5")
+    if (self.mode == "norm" and value) then
+      assert(self.mode == "norm" and value == 1,  "Wrong value parameter: range=1-1")
+      assert(self.scale.x, "Missing scale.x number value")
+      assert(self.scale.y, "Missing scale.y number value")
+      assert(type(self.scale.x) == "number", "Wrong type in scale.x: number expected")
+      assert(type(self.scale.y) == "number", "Wrong type in scale.y: number expected")
+    elseif (self.mode == "quad" and value) then
+      assert(self.mode == "quad" and value > 0 and value < 6, "Wrong value parameter: range=1-5")
+      assert(self.scale.x,      "Missing scale.x number value")
+      assert(self.scale.y,      "Missing scale.y number value")
+      assert(self.frame,        "Missing frame table value")
+      assert(self.frame.rows,   "Missing frame.rows number value")
+      assert(self.frame.cols,   "Missing frame.cols number value")
+      assert(self.button,       "Missing button table value")
+      assert(self.button.top,   "Missing button.top string value")
+      assert(self.button.bottom,"Missing button.bottom string value")
+      assert(self.button.right, "Missing button.right string value")
+      assert(self.button.left,  "Missing button.left string value")
+      assert(type(self.scale.x) == "number",      "Wrong type in scale.x: number expected")
+      assert(type(self.scale.y) == "number",      "Wrong type in scale.y: number expected")
+      assert(type(self.frame) == "table",         "Wrong type in frame: table expected")
+      assert(type(self.frame.rows) == "number",   "Wrong type in frame.rows: number expected")
+      assert(type(self.frame.cols) == "number",   "Wrong type in frame.cols: number expected")
+      assert(type(self.button) == "table",        "Wrong type in button: table expected")
+      assert(type(self.button.top) == "string",   "Wrong type in button.top: string expected")
+      assert(type(self.button.bottom) == "string","Wrong type in button.bottom: string expected")
+      assert(type(self.button.right) == "string", "Wrong type in button.right: string expected")
+      assert(type(self.button.left) == "string",  "Wrong type in button.left: string expeceted")
     end
   end
 
-  self.image = graphics.newImage(directory .. self.filename)
+  self.image = graphics.newImage(directory .. self.filename)  -- norm/global section
   self.width = self.image:getWidth() * ((self.mode == "norm" and value == 1) and self.scale.x or 1)
   self.height = self.image:getHeight() * ((self.mode == "norm" and value == 1) and self.scale.y or 1)
 
-  if (self.mode == "quad") then
-    self.frame.width = self.width * self.scale.x / self.frame.rows
-    self.frame.height = self.height * self.scale.y / self.frame.cols
+  if (self.mode == "quad") then -- quad section
+    self.frame.width = (self.width / self.frame.rows) * self.scale.x
+    self.frame.height = (self.height / self.frame.cols) * self.scale.y
 
-    for i = 0, self.frame.cols - 1 do
+    for i = 0, self.frame.cols - 1 do -- load image quad
       for j = 0, self.frame.rows - 1 do
         table.insert(self.sheets, graphics.newQuad(
-          (value or 0) + (j * self.frame.size.width), (value or 0) + (i * self.frame.size.height),
-          self.frame.size.width - (value or 0), self.frame.size.height - (value or 0),
+          j * self.frame.width, i * self.frame.height,
+          self.frame.width - (value or 0), self.frame.height - (value or 0),
           self.width, self.height
         ))
       end
+    end
+  end
+end
+
+function elite.update(self, delta, velocity)
+  if (self.mode == "quad") then
+    self.frame.current = self.frame.current + (delta * (velocity or 1)) -- update current frame
+    if (self.frame.current > self.frame.rows * self.frame.cols) then
+      self.frame.current = 1
+    end
+
+    if (keyboard.isDown(self.button.top)) then
+      self.y = self.y - (self.speed.y * delta)
+    elseif (keyboard.isDown(self.button.bottom)) then
+      self.y = self.y + (self.speed.y * delta)
+    elseif (keyboard.isDown(self.button.right)) then
+      self.x = self.x + (self.speed.x * delta)
+    elseif (keyboard.isDown(self.button.left)) then
+      self.x = self.x - (self.speed.x * delta)
     end
   end
 end
@@ -88,31 +133,22 @@ function elite.draw(self, debug)
     lib.line(self)
   end
 
-  if (lib.mode(self.mode)) then
-    if (mode == "norm") then
-      graphics.draw(
-        self.image, self.x, self.y,
-        self.angle or 0, self.scale.x or 1, self.scale.y or 1
-      )
+  if (self.mode == "norm") then
+    graphics.draw(
+      self.image, self.x, self.y,
+      self.angle or 0, self.scale.x or 1, self.scale.y or 1
+    )
+  elseif (self.mode == "quad") then
+    graphics.draw(
+      self.image, self.sheets[math.floor(self.frame.current)], self.x, self.y,
+      self.angle or 0, self.scale.x or 1, self.scale.y or 1
+    )
+  end
+end
 
-    elseif (mode == "quad") then
-      assert(self.frame,            "Missing frame table")
-      assert(self.frame.current,    "Missing frame.current")
-      assert(self.frame.num_width,  "Missing frame.num_width")
-      assert(self.frame.num_height, "Missing frame.num_height")
-      assert(self.frame.size,       "Missing frame.size table")
-      assert(self.frame.size.width, "Missing frame.size.width")
-      assert(self.frame.size.height,"Missing frame.size.height")
-      assert(self.sheets,           "Missing sheets table")
-
-      assert(type(self.frame) == "table",             "Wrong type in frame field: table expected")
-      assert(type(self.frame.current) == "number",    "Wrong type in frame.current: number expected")
-      assert(type(self.frame.num_width) == "number",  "Wrong type in frame.num_width: number expected")
-      assert(type(self.frame.num_height) == "number", "Wrong type in frame.num_height: number expected")
-      assert(type(self.frame.size) == "table",        "Wrong type in frame.size field: table expected")
-      assert(type(self.frame.size.width) == "number", "Wrong type in frame.size.width: number expected")
-      assert(type(self.frame.size.height) == "number","Wrong type in frame.size.height: number expected")
-    end
+function elite.collision(self, target)
+  if (self.x < target.x + target.width) then
+    self.x = target.x + target.width
   end
 end
 
