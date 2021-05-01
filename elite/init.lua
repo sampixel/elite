@@ -50,47 +50,7 @@ function elite.extend(self, object)
 end 
 
 function elite.load(self, value)
-  assert(directory, "Could not find image directory")
-  assert(self.mode, "Could not find mode")
-  assert(lib.mode(self.mode), "Could not load mode due to its wrong value: \"" .. self.mode .. "\"")
-  assert(lib.format(self.filename:sub(-3, #self.filename)), "Missing image format from filename: \"" .. self.filename .. "\"")
-
-  if (value) then
-    assert(type(value) == "number", "Wrong type of value parameter: number expected")
-    if (self.mode == "norm" and value) then
-      assert(self.mode == "norm" and value == 1,  "Wrong value parameter: range=1-1")
-      assert(self.scale,    "Missing scale table value")
-      assert(self.scale.x,  "Missing scale.x number value")
-      assert(self.scale.y,  "Missing scale.y number value")
-      assert(type(self.scale) == "table",     "Wrong type in scale: table expected")
-      assert(type(self.scale.x) == "number",  "Wrong type in scale.x: number expected")
-      assert(type(self.scale.y) == "number",  "Wrong type in scale.y: number expected")
-    elseif (self.mode == "quad" and value) then
-      assert(self.mode == "quad" and value > 0 and value < 6, "Wrong value parameter: range=1-5")
-      assert(self.scale,        "Missing scale table value")
-      assert(self.scale.x,      "Missing scale.x number value")
-      assert(self.scale.y,      "Missing scale.y number value")
-      assert(self.frame,        "Missing frame table value")
-      assert(self.frame.rows,   "Missing frame.rows number value")
-      assert(self.frame.cols,   "Missing frame.cols number value")
-      assert(self.button,       "Missing button table value")
-      assert(self.button.top,   "Missing button.top string value")
-      assert(self.button.bottom,"Missing button.bottom string value")
-      assert(self.button.right, "Missing button.right string value")
-      assert(self.button.left,  "Missing button.left string value")
-      assert(type(self.scale) == "table",         "Wrong type in scale: table expected")
-      assert(type(self.scale.x) == "number",      "Wrong type in scale.x: number expected")
-      assert(type(self.scale.y) == "number",      "Wrong type in scale.y: number expected")
-      assert(type(self.frame) == "table",         "Wrong type in frame: table expected")
-      assert(type(self.frame.rows) == "number",   "Wrong type in frame.rows: number expected")
-      assert(type(self.frame.cols) == "number",   "Wrong type in frame.cols: number expected")
-      assert(type(self.button) == "table",        "Wrong type in button: table expected")
-      assert(type(self.button.top) == "string",   "Wrong type in button.top: string expected")
-      assert(type(self.button.bottom) == "string","Wrong type in button.bottom: string expected")
-      assert(type(self.button.right) == "string", "Wrong type in button.right: string expected")
-      assert(type(self.button.left) == "string",  "Wrong type in button.left: string expeceted")
-    end
-  end
+  lib.load(self, value, directory)
 
   self.image = graphics.newImage(directory .. self.filename)  -- norm/global section
   self.width = self.image:getWidth() * ((self.mode == "norm" and value == 1) and self.scale.x or 1)
@@ -115,8 +75,6 @@ function elite.load(self, value)
 end
 
 function elite.update(self, delta, velocity)
-  print(self.frame.current)
-
   if (self.mode == "quad") then
     self.frame.current = (self.frame.current > self.frame.last and self.frame.first or self.frame.current + (delta * (velocity or 1)))  -- update current frame
 
@@ -141,21 +99,18 @@ function elite.draw(self, debug)
   if (self.mode == "norm") then
     graphics.draw(
       self.image, self.x, self.y,
-      self.angle or 0, self.scale.x or 1, self.scale.y or 1
+      self.rotation or 0, self.scale.x or 1, self.scale.y or 1
     )
   elseif (self.mode == "quad") then
     graphics.draw(
       self.image, self.sheets[math.floor(self.frame.current)], self.x, self.y,
-      self.angle or 0, self.scale.x or 1, self.scale.y or 1
+      self.rotation or 0, self.scale.x or 1, self.scale.y or 1
     )
   end
 end
 
 function elite.animate(self, execute, direction)
-  assert(execute,   "Missing execute parameter: \"walk\" or \"idle\"")
-  assert(direction, "Missing direction parameter: \"top\" or \"bottom\" or \"right\" or \"left\"")
-  assert(type(execute) == "string",   "Wrong type on execute parameter: string expected")
-  assert(type(direction) == "string", "Wrong type on direction parameter: string expected")
+  lib.animate(self, execute, direction)
 
   self.frame.current = self.sequence[direction][execute].start
   self.frame.first = self.sequence[direction][execute].start
@@ -163,8 +118,10 @@ function elite.animate(self, execute, direction)
 end
 
 function elite.collision(self, target)
-  if (self.x < target.x + target.width) then
+  if (self.x < target.x + target.width or target.x < self.x + (self.mode == "quad" and self.frame.width or self.width)) then
     self.x = target.x + target.width
+  elseif (self.y < target.y + target.height or target.y < self.y + (self.mode == "quad" and self.frame.height or self.height)) then
+    self.y = target.y + target.height
   end
 end
 

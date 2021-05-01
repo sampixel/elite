@@ -32,10 +32,10 @@ Proceeding inside `love.load()` function
   Additional fields are required to execute properly the extension:
     - `filename` *(string)(required)* the image name of the object including its format
     - `rotation` *(number)(optional)* the image rotation parameter
-    - `scale` *(table)(required)* a table containing the object's scale factors
+    - `scale` *(table)(optional)* a table containing the object's scale factors
       - `x` *(number)(required)* the x scale factor (set 1 for default value)
       - `y` *(number)(required)* the y scale factor (set 1 for default value)
-    - `speed` *(table)(required)* a table containing the object's speed values
+    - `speed` *(table)(optional)* a table containing the object's speed values
       - `x` *(number)(required)* the horizontal speed
       - `y` *(number)(required)* the vertical speed
 
@@ -107,3 +107,4 @@ From `love.draw()`
     player:draw(1)  -- debug enabled
   end
   ```
+## Animation
