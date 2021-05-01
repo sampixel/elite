@@ -59,12 +59,15 @@ function elite.load(self, value)
     assert(type(value) == "number", "Wrong type of value parameter: number expected")
     if (self.mode == "norm" and value) then
       assert(self.mode == "norm" and value == 1,  "Wrong value parameter: range=1-1")
-      assert(self.scale.x, "Missing scale.x number value")
-      assert(self.scale.y, "Missing scale.y number value")
-      assert(type(self.scale.x) == "number", "Wrong type in scale.x: number expected")
-      assert(type(self.scale.y) == "number", "Wrong type in scale.y: number expected")
+      assert(self.scale,    "Missing scale table value")
+      assert(self.scale.x,  "Missing scale.x number value")
+      assert(self.scale.y,  "Missing scale.y number value")
+      assert(type(self.scale) == "table",     "Wrong type in scale: table expected")
+      assert(type(self.scale.x) == "number",  "Wrong type in scale.x: number expected")
+      assert(type(self.scale.y) == "number",  "Wrong type in scale.y: number expected")
     elseif (self.mode == "quad" and value) then
       assert(self.mode == "quad" and value > 0 and value < 6, "Wrong value parameter: range=1-5")
+      assert(self.scale,        "Missing scale table value")
       assert(self.scale.x,      "Missing scale.x number value")
       assert(self.scale.y,      "Missing scale.y number value")
       assert(self.frame,        "Missing frame table value")
@@ -75,6 +78,7 @@ function elite.load(self, value)
       assert(self.button.bottom,"Missing button.bottom string value")
       assert(self.button.right, "Missing button.right string value")
       assert(self.button.left,  "Missing button.left string value")
+      assert(type(self.scale) == "table",         "Wrong type in scale: table expected")
       assert(type(self.scale.x) == "number",      "Wrong type in scale.x: number expected")
       assert(type(self.scale.y) == "number",      "Wrong type in scale.y: number expected")
       assert(type(self.frame) == "table",         "Wrong type in frame: table expected")
@@ -93,13 +97,15 @@ function elite.load(self, value)
   self.height = self.image:getHeight() * ((self.mode == "norm" and value == 1) and self.scale.y or 1)
 
   if (self.mode == "quad") then -- quad section
-    self.frame.width = (self.width / self.frame.rows) * self.scale.x
-    self.frame.height = (self.height / self.frame.cols) * self.scale.y
+    self.frame.width = self.width / self.frame.rows
+    self.frame.height = self.height / self.frame.cols
+    self.frame.current = (not self.frame.current and 1 or self.frame.current)
 
-    for i = 0, self.frame.cols - 1 do -- load image quad
-      for j = 0, self.frame.rows - 1 do
+    self.sheets = {}  -- declare table to store sprite sheets
+    for col = 0, self.frame.cols - 1 do -- load image quad
+      for row = 0, self.frame.rows - 1 do
         table.insert(self.sheets, graphics.newQuad(
-          j * self.frame.width, i * self.frame.height,
+          self.frame.width * row + (value or 0), self.frame.height * col + (value or 0),
           self.frame.width - (value or 0), self.frame.height - (value or 0),
           self.width, self.height
         ))
@@ -109,13 +115,12 @@ function elite.load(self, value)
 end
 
 function elite.update(self, delta, velocity)
-  if (self.mode == "quad") then
-    self.frame.current = self.frame.current + (delta * (velocity or 1)) -- update current frame
-    if (self.frame.current > self.frame.rows * self.frame.cols) then
-      self.frame.current = 1
-    end
+  print(self.frame.current)
 
-    if (keyboard.isDown(self.button.top)) then
+  if (self.mode == "quad") then
+    self.frame.current = (self.frame.current > self.frame.last and self.frame.first or self.frame.current + (delta * (velocity or 1)))  -- update current frame
+
+    if (keyboard.isDown(self.button.top)) then -- movements
       self.y = self.y - (self.speed.y * delta)
     elseif (keyboard.isDown(self.button.bottom)) then
       self.y = self.y + (self.speed.y * delta)
@@ -144,6 +149,17 @@ function elite.draw(self, debug)
       self.angle or 0, self.scale.x or 1, self.scale.y or 1
     )
   end
+end
+
+function elite.animate(self, execute, direction)
+  assert(execute,   "Missing execute parameter: \"walk\" or \"idle\"")
+  assert(direction, "Missing direction parameter: \"top\" or \"bottom\" or \"right\" or \"left\"")
+  assert(type(execute) == "string",   "Wrong type on execute parameter: string expected")
+  assert(type(direction) == "string", "Wrong type on direction parameter: string expected")
+
+  self.frame.current = self.sequence[direction][execute].start
+  self.frame.first = self.sequence[direction][execute].start
+  self.frame.last = self.sequence[direction][execute].count
 end
 
 function elite.collision(self, target)

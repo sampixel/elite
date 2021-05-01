@@ -1,4 +1,4 @@
-`**elite**` is just a simple class module for the LÖVE2D game framework.
+`elite` is just a simple class module for the LÖVE2D game framework.
 
 ## Instructions
 - copy `elite` folder inside your project directory
@@ -31,18 +31,22 @@ Proceeding inside `love.load()` function
 
   Additional fields are required to execute properly the extension:
     - `filename` *(string)(required)* the image name of the object including its format
+    - `rotation` *(number)(optional)* the image rotation parameter
     - `scale` *(table)(required)* a table containing the object's scale factors
       - `x` *(number)(required)* the x scale factor (set 1 for default value)
       - `y` *(number)(required)* the y scale factor (set 1 for default value)
     - `speed` *(table)(required)* a table containing the object's speed values
       - `x` *(number)(required)* the horizontal speed
       - `y` *(number)(required)* the vertical speed
+
       **NOTE**: The above listed properties are suitable for all objects that use *"norm"* as their drawing mode
 
     If you're using a sprite-sheet image, include the following properties
-    - `sheets` *(table)(required)* a table to store quad pieces of image
+    - `sheets` *(table)(optional)* a table to store quad pieces of image
     - `frame` *(table)(required)* a table to store the following properties
-      - `current` *(number)(required)* the current frame (set to 1)
+      - `current` *(number)(optional)* the current frame (set to 1)
+      - `first` *(number)(optional)* the first frame of the active sequence
+      - `last` *(number)(optional)* the last frame of the active sequence
       - `rows` *(number)(required)* the number of sprites in the image's row
       - `cols` *(number)(required)* the number of sprites in the image's column
       - `width` *(number)(optional)* the width of one piece of sprite image (can be omitted or set to 1)
@@ -53,17 +57,25 @@ Proceeding inside `love.load()` function
       - `right` *(string)(required)* moves the object to the right
       - `left` *(string)(required)* moves the object to the left
     - `sequence` *(table)(required)* a table containing the draw sequence of quads to use
-      - `idle` *(table)(require)* a table containing object's idle sequence
       - `top` *(table)(required)* a table containing object's top sequence
       - `bottom` *(table)(required)* a table containing object's bottom sequence
       - `right` *(table)(required)* a table containing object's right sequence
       - `left` *(table)(required)* a table containing object's left sequence
+
+      **NOTE**: Each field in the `sequence` table must have 2 tables with 2 properties:
+        - `idle` *(table)(required)* a table containing idle frame sequence to animate
+          - `start` *(number)(required)* where the frame should start
+          - `count` *(number)(required)* where the frame should end
+        - `walk` * (table)(required)* a table containing walk frame sequence to animate
+          - `start` *(number)(required)* where the frame should start
+          - `count` *(number)(required)* where the frame should end
+
       **NOTE**: The above listed properties are suitable for all object that use *"quad"* as their drawing mode
 
 Once the object is instantiated the latter can benefit from the following functions
 - use `elite.load(self, value)` to load the given image's width and height
   - this function provides an additional parameter
-    - `value` *(number)(otional)* this value will act based on the object's mode (range=?-?)
+    - `value` *(number)(optional)* this value will act based on the object's mode (range=?-?)
       - if mode is `norm` then the image will be scaled based on the scale factors (range=1-1)
         ```lua
         player:load(1)  -- the player's image will be scaled
