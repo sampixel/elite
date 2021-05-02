@@ -118,10 +118,27 @@ function elite.animate(self, execute, direction)
 end
 
 function elite.collision(self, target)
-  if (self.x < target.x + target.width or target.x < self.x + (self.mode == "quad" and self.frame.width or self.width)) then
-    self.x = target.x + target.width
-  elseif (self.y < target.y + target.height or target.y < self.y + (self.mode == "quad" and self.frame.height or self.height)) then
-    self.y = target.y + target.height
+  if (self.mode == "quad") then
+    if (self.x <= target.x + target.width and
+        target.x <= self.x + (self.frame.width * self.scale.x) and
+        target.y <= self.y + (self.frame.height * self.scale.y)) then
+      self.y = target.y - (self.frame.height * self.scale.y)
+
+    elseif (self.y <= target.y + target.height and
+        target.y <= self.y + (self.frame.height * self.scale.y) and
+        target.x <= self.x + (self.frame.width * self.scale.x)) then
+      self.x = target.x - (self.frame.width * self.scale.x)
+
+    elseif (target.x <= self.x + (self.frame.width * self.scale.x) and
+        self.x <= target.x + target.width and
+        self.y <= target.y + target.height) then
+      self.y = target.y + target.height
+
+    elseif (target.y <= self.y + (self.frame.height * self.scale.y) and
+        self.y <= target.y + target.height and
+        self.x <= target.y + target.height) then
+      self.x = target.x + target.width
+    end
   end
 end
 

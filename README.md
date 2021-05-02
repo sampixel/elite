@@ -1,5 +1,12 @@
 `elite` is just a simple class module for the LÖVE2D game framework.
 
+## Disclaimer
+
+This module was created with the only purpose to improve my programming skills and prevent coding several times the same thing.
+A way to gain time was to create a class module that provides functions for loading sprite-sheets and animate them, basic physics simulation, 
+collision detection and movements with keyboard buttons.
+
+
 ## Instructions
 - copy `elite` folder inside your project directory
 
@@ -11,15 +18,14 @@ function love.load()
 ```
 Proceeding inside `love.load()` function
 
-## Functions
 - use `elite.setImageDir(path)` to set the image source directory
   ```lua
-    elite.setImageDir("images")
+  elite.setImageDir("images")
   ```
 - use `elite.extend(self, object)` to extend a new object table (returns the object)
   ```lua
-    player = elite.extend(elite, {})  -- accessing via property
-    player = elite:extend({})         -- accessing via method
+  player = elite.extend(elite, {})  -- accessing via property
+  player = elite:extend({})         -- accessing via method
   ```
 - use `elite.setMode(self, mode)` to set the default drawing mode of the object instanced
   ```lua
@@ -78,11 +84,12 @@ Once the object is instantiated the latter can benefit from the following functi
     - `value` *(number)(optional)* this value will act based on the object's mode (range=?-?)
       - if mode is `norm` then the image will be scaled based on the scale factors (range=1-1)
         ```lua
-        player:load(1)  -- the player's image will be scaled
+          player:load(1)  -- the player's image will be scaled
         ```
       - if mode is `quad` then the image will apply a value to each frame to prevent bleeding (range=1-5)
         ```lua
-        player:load(3)  -- a value of 3 will be applied to each frame
+          player:load(3)  -- a value of 3 will be applied to each frame
+        end
         ```
 
 From `love.update(delta)`
@@ -108,3 +115,36 @@ From `love.draw()`
   end
   ```
 ## Animation
+- use `elite.animate(self, execute, direction)` to set the animation sequence and its direction
+  - this function provides additional parameters
+    - `execute` *(string)(required)* sets the sequence to display, available are `walk` or `idle`
+    - `direction` *(string)(required)* sets the direction movement, available are `top`, `bottom`, `right` or `left`
+
+    From `love.keypressed(key)`
+    ```lua
+    function love.keypressed(key)
+      if (key == player.button.top) then
+        player:animte("walk", "top")
+      end
+    end
+    ```
+    From `love.keyreleased(key)`
+    ```lua
+    function love.keyreleased(key)
+      if (key == player.button.top) then
+        player:animate("idle", "top")
+      end
+    end
+    ```
+
+    **NOTE**: Use *"walk"* execute parameter each time the key is pressed and *"idle"* each time the key is released
+
+## Collision
+- use `elite.collision(self, target)` to detect intersections and collisions
+  - this function provide a parameter
+    - `target` the target which the player will collide with
+
+    From `love.update(delta)`
+    ```lua
+    player:collision(enemy)
+    ```
