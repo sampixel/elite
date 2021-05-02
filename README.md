@@ -19,21 +19,44 @@ function love.load()
 Proceeding inside `love.load()` function
 
 - use `elite.setImageDir(path)` to set the image source directory
+  - `path` *(string)(required)* the image folder path
   ```lua
   elite.setImageDir("images")
   ```
 - use `elite.extend(self, object)` to extend a new object table (returns the object)
+  - `object` *(table)(optional)* a table with necessary fields (default is an empty table)
   ```lua
   player = elite.extend(elite, {})  -- accessing via property
   player = elite:extend({})         -- accessing via method
   ```
-- use `elite.setMode(self, mode)` to set the default drawing mode of the object instanced
+- use `elite.setMode(self, mode)` to set the default drawing mode of the object
+  - `mode` *(string)(required)* the drawing mode to apply to the object, available are `norm`, `quad`
   ```lua
-  player:setMode("quad")  -- set "quad" drawing mode to player object
+  elite.setMode(player, "quad") -- or
+  player:setMode("quad")        -- set "quad" drawing mode to player object
   ```
-  **NOTE**: All the following functions will depend on the mode you selected
 
-  Available drawing modes are: `norm`, `quad`
+- use `elite.setGravity(self, gravity, increment)` to set a gravity to the object
+  - `gravity` *(number)(required)* the gravity value to apply to the object
+  - `increment` *(number)(required)* the increment value to apply to the gravity 
+  ```lua
+  elite.setGravity(player, 200, 30) -- or
+  player:setGravity(200, 30)        -- set player as a "dynamic" body
+  ```
+- use `elite.jump(self, value)` to apply a vertical force to the object
+  - `value` *(number)(required)* the value to apply to the object
+
+  From `love.keypressed(key)`
+  ```lua
+  function love.keypressed(key)
+    if (key == player.button.top) then
+      elite.jump(player, 200)   -- or
+      player:jump(200)          -- jump!
+    end
+  end
+  ```
+  **NOTE** the *"jump"* function will only be applied if the gravity is set with `elite.setGravity()`
+  **NOTE**: All the following functions will depend on the mode you selected
 
   Additional fields are required to execute properly the extension:
     - `filename` *(string)(required)* the image name of the object including its format
@@ -80,71 +103,77 @@ Proceeding inside `love.load()` function
 
 Once the object is instantiated the latter can benefit from the following functions
 - use `elite.load(self, value)` to load the given image's width and height
-  - this function provides an additional parameter
-    - `value` *(number)(optional)* this value will act based on the object's mode (range=?-?)
-      - if mode is `norm` then the image will be scaled based on the scale factors (range=1-1)
-        ```lua
-          player:load(1)  -- the player's image will be scaled
-        ```
-      - if mode is `quad` then the image will apply a value to each frame to prevent bleeding (range=1-5)
-        ```lua
-          player:load(3)  -- a value of 3 will be applied to each frame
-        end
-        ```
+  - `value` *(number)(optional)* this value will act based on the object's mode (range=?-?)
+    - if mode is `norm` then the image will be scaled based on the scale factors (range=1-1)
+    ```lua
+      elite.load(player, 1) -- or
+      player:load(1)        -- the player's image will be scaled
+    ```
+    - if mode is `quad` then the image will apply a value to each frame to prevent bleeding (range=1-5)
+    ```lua
+      elite.load(player, 3) -- or
+      player:load(3)        -- a value of 3 will be applied to each frame
+    end
+    ```
 
 From `love.update(delta)`
 - use `elite.update(self, delta, velocity)` to update the object's frames (only if using "quad" mode)
-  - this function provides some additional parameters
-    - `delta` *(number)(required)* the delta time value provided by love
-    - `velocity` *(number)(optional)* the velocity value to be applied on the animation (range=1-(-1))
-    ```lua
-    function love.update(delta)
-      player:update(delta, 30)  -- delta will be multiplied by 30
-    end
-    ```
-    Once this function is implemented inside your `main.lua` file, you'll be able to move the object by pressing the appropriate buttons
+  - `delta` *(number)(required)* the delta time value provided by love
+  - `velocity` *(number)(optional)* the velocity value to be applied on the animation (range=1-(-1))
+  ```lua
+  function love.update(delta)
+    elite.update(player, delta, 30) -- or
+    player:update(delta, 30)        -- delta will be multiplied by 30
+  end
+  ```
+  Once this function is implemented inside your `main.lua` file, you'll be able to move the object by pressing the appropriate buttons
 
 From `love.draw()`
 - use `elite.draw(self, debug)` to draw the object
-  - this function provides and additional parameter
-    - `debug` *(number)(optional)* if set to 1 it activates debugging (range=1-1)
+  - `debug` *(number)(optional)* if set to 1 it activates debugging (range=1-1)
   ```lua
   function love.draw()
-    player:draw()   -- debug disabled (default)
+    elite.draw(player)  -- or
+    player:draw()       -- debug disabled (default)
+
+    elite.draw(1)   -- or
     player:draw(1)  -- debug enabled
   end
   ```
+
 ## Animation
 - use `elite.animate(self, execute, direction)` to set the animation sequence and its direction
-  - this function provides additional parameters
-    - `execute` *(string)(required)* sets the sequence to display, available are `walk` or `idle`
-    - `direction` *(string)(required)* sets the direction movement, available are `top`, `bottom`, `right` or `left`
+  - `execute` *(string)(required)* sets the sequence to display, available are `walk` or `idle`
+  - `direction` *(string)(required)* sets the direction movement, available are `top`, `bottom`, `right` or `left`
 
-    From `love.keypressed(key)`
-    ```lua
-    function love.keypressed(key)
-      if (key == player.button.top) then
-        player:animte("walk", "top")
-      end
+  From `love.keypressed(key)`
+  ```lua
+  function love.keypressed(key)
+    if (key == player.button.top) then
+      elite.animate(player, "walk", "top")  -- or
+      player:animte("walk", "top")          -- animate walk sequence moving the player to the top
     end
-    ```
-    From `love.keyreleased(key)`
-    ```lua
-    function love.keyreleased(key)
-      if (key == player.button.top) then
-        player:animate("idle", "top")
-      end
+  end
+  ```
+  From `love.keyreleased(key)`
+  ```lua
+  function love.keyreleased(key)
+    if (key == player.button.top) then
+      player:animate("idle", "top")
     end
-    ```
+  end
+  ```
 
-    **NOTE**: Use *"walk"* execute parameter each time the key is pressed and *"idle"* each time the key is released
+  **NOTE**: An internal function uses `love.keyboard.isDown` after the key is pressed and held down, so you don't need to introduce a movement control code chunk
+  **NOTE**: Use *"walk"* execute parameter each time the key is pressed and *"idle"* each time the key is released
 
 ## Collision
 - use `elite.collision(self, target)` to detect intersections and collisions
-  - this function provide a parameter
-    - `target` the target which the player will collide with
+  - `target` the target which the player will collide with
 
-    From `love.update(delta)`
-    ```lua
+  From `love.update(delta)`
+  ```lua
+  function love.update(delta)
     player:collision(enemy)
-    ```
+  end
+  ```
