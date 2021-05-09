@@ -56,6 +56,7 @@ Proceeding inside `love.load()` function
   end
   ```
   **NOTE** the *"jump"* function will only be applied if the gravity is set with `elite.setGravity()`
+
   **NOTE**: All the following functions will depend on the mode you selected
 
   Additional fields are required to execute properly the extension:
@@ -93,11 +94,11 @@ Proceeding inside `love.load()` function
 
       **NOTE**: Each field in the `sequence` table must have 2 tables with 2 properties:
         - `idle` *(table)(required)* a table containing idle frame sequence to animate
-          - `start` *(number)(required)* where the frame should start
-          - `count` *(number)(required)* where the frame should end
+          - `from` *(number)(required)* where the frame should start
+          - `to` *(number)(required)* where the frame should end
         - `walk` * (table)(required)* a table containing walk frame sequence to animate
-          - `start` *(number)(required)* where the frame should start
-          - `count` *(number)(required)* where the frame should end
+          - `from` *(number)(required)* where the frame should start
+          - `to` *(number)(required)* where the frame should end
 
       **NOTE**: The above listed properties are suitable for all object that use *"quad"* as their drawing mode
 
@@ -163,8 +164,8 @@ From `love.draw()`
     end
   end
   ```
-
   **NOTE**: An internal function uses `love.keyboard.isDown` after the key is pressed and held down, so you don't need to introduce a movement control code chunk
+
   **NOTE**: Use *"walk"* execute parameter each time the key is pressed and *"idle"* each time the key is released
 
 ## Collision

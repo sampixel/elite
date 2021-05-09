@@ -66,16 +66,15 @@ function elite.load(self, value)
   self.height = self.image:getHeight() * ((self.mode == "norm" and value == 1) and self.scale.y or 1)
 
   if (self.mode == "quad") then -- quad section
-    self.frame.width = self.width / self.frame.rows
-    self.frame.height = self.height / self.frame.cols
+    self.frame.width = self.width / self.frame.cols
+    self.frame.height = self.height / self.frame.rows
     self.frame.current = (not self.frame.current and 1 or self.frame.current)
 
-    -- TODO Load the quads based on rows and columns
     self.sheets = {}  -- declare table to store sprite sheets
-    for col = 0, self.frame.cols - 1 do -- load image quad
-      for row = 0, self.frame.rows - 1 do
+    for i = 0, self.frame.rows - 1 do -- load image quad
+      for j = 0, self.frame.cols - 1 do
         table.insert(self.sheets, graphics.newQuad(
-          self.frame.width * row + (value or 0), self.frame.height * col + (value or 0),
+          self.frame.width * j + (value or 0), self.frame.height * i + (value or 0),
           self.frame.width - (value or 0), self.frame.height - (value or 0),
           self.width, self.height
         ))
@@ -85,24 +84,41 @@ function elite.load(self, value)
 end
 
 function elite.update(self, delta, velocity)
-  if (self.physics == "enabled") then
-    self.y = self.y + ((self.gravity * 9.81) * delta)
+  if (self.gravity) then
+    self.velocity = self.y * delta
+    self.y = self.y + (self.gravity * delta)
     self.gravity = self.gravity + self.increment
   end
 
   if (self.mode == "quad") then
-    self.frame.current = (self.frame.current > self.frame.last and self.frame.first or self.frame.current + (delta * (velocity or 1)))  -- update current frame
+    self.frame.current = self.frame.current + (delta * (velocity or 1)) -- update frame
+
+    if (self.frame.current >= self.frame.last) then -- reset frame
+      self.frame.current = self.frame.first
+    end
 
     if (keyboard.isDown(self.button.top)) then -- movements
       self.y = self.y - (self.speed.y * delta)
+      if (self.body) then
+        self.body:setY(self.y)
+      end
     elseif (keyboard.isDown(self.button.bottom)) then
       self.y = self.y + (self.speed.y * delta)
+      if (self.body) then
+        self.body:setY(self.y)
+      end
     end
 
     if (keyboard.isDown(self.button.right)) then
       self.x = self.x + (self.speed.x * delta)
+      if (self.body) then
+        self.body:setX(self.x)
+      end
     elseif (keyboard.isDown(self.button.left)) then
       self.x = self.x - (self.speed.x * delta)
+      if (self.body) then
+        self.body:setX(self.x)
+      end
     end
   end
 end
@@ -115,13 +131,17 @@ function elite.draw(self, debug)
 
   if (self.mode == "norm") then
     graphics.draw(
-      self.image, self.x, self.y,
-      self.rotation or 0, self.scale.x or 1, self.scale.y or 1
+      self.image,
+      (self.body and self.body:getX() or self.x), (self.body and self.body:getY() or self.y),
+      (self.body and self.body:setAngle(self.rotation or 0) or (self.rotation or 0)), self.scale.x or 1, self.scale.y or 1,
+      (self.body and self.width / 2 or 0), (self.body and self.height / 2 or 0)
     )
   elseif (self.mode == "quad") then
     graphics.draw(
-      self.image, self.sheets[math.floor(self.frame.current)], self.x, self.y,
-      self.rotation or 0, self.scale.x or 1, self.scale.y or 1
+      self.image, self.sheets[math.floor(self.frame.current)],
+      (self.body and self.body:getX() or self.x), (self.body and self.body:getY() or self.y),
+      (self.body and self.body:setAngle(self.rotation or 0) or (self.rotation or 0)), self.scale.x or 1, self.scale.y or 1,
+      (self.body and self.frame.width / 2 or 0), (self.body and self.frame.height / 2 or 0)
     )
   end
 end
@@ -129,17 +149,25 @@ end
 function elite.animate(self, execute, direction)
   lib.animate(self, execute, direction)
 
-  self.frame.current = self.sequence[direction][execute].start
-  self.frame.first = self.sequence[direction][execute].start
-  self.frame.last = self.sequence[direction][execute].count
+  self.frame.current = self.sequence[direction][execute].from
+  self.frame.first = self.frame.current
+  self.frame.last = self.sequence[direction][execute].to
 end
 
 function elite.jump(self, value)
-  self.y = -value
+  if not (self.velocity < -1 or self.velocity > 1) then
+    self.gravity = -value
+  end
 end
 
 function elite.collision(self, target)
-  if (self.y > target.y) then 
+  if (self.y < target.y + target.height) then
+    if (target.y < self.y + (self.mode == "quad" and self.frame.height * self.scale.y or self.height) and
+        self.x + (self.mode == "quad" and self.frame.width * self.scale.x or self.width) > target.x and
+        self.x < target.x + target.width) then
+      self.y = target.y - (self.mode == "quad" and self.frame.height * self.scale.y or self.height)
+    end
+  elseif (self.y > target.y) then 
     if (self.y < target.y + target.height and
         self.x + (self.mode == "quad" and self.frame.width * self.scale.x or self.width) > target.x and
         self.x < target.x + target.width and self.y > target.y) then
@@ -156,12 +184,6 @@ function elite.collision(self, target)
         self.y + (self.mode == "quad" and self.frame.height * self.scale.y or self.height) > target.y and
         self.y < target.y + target.height) then
       self.x = target.x + target.width
-    end
-  elseif (self.y < target.y + target.height) then
-    if (target.y < self.y + (self.mode == "quad" and self.frame.height * self.scale.y or self.height) and
-        self.x + (self.mode == "quad" and self.frame.width * self.scale.x or self.width) > target.x and
-        self.x < target.x + target.width) then
-      self.y = target.y - (self.mode == "quad" and self.frame.height * self.scale.y or self.height)
     end
   end
 end
