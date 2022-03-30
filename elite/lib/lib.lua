@@ -23,14 +23,12 @@ SOFTWARE.
 --]]
 
 local graphics = love.graphics
-local cw = graphics.getWidth()
-local ch = graphics.getHeight()
 
 local lib = {}
 
 lib.list = {}
-lib.list.mode = {"norm", "quad"}
-lib.list.format = {"png", "jpg", "bmp", "tga", "hdr", "pic", "exr"}
+lib.list.mode = { "norm", "quad" }
+lib.list.format = { "png", "jpg", "bmp", "tga", "hdr", "pic", "exr" }
 
 function lib.mode(m) -- check if self.mode is in array
   for i = 1, #lib.list.mode do
